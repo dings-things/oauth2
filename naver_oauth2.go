@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	// naverProvider : naver login provider
-	naverProvider ProviderType = "naver"
+	// NaverProvider : naver login provider
+	NaverProvider ProviderType = "naver"
 	// naverUserInfoURL : naver user info url
 	naverUserInfoURL = "https://openapi.naver.com/v1/nid/me"
 )
@@ -74,7 +74,7 @@ Fulfill UserInfo interface
 
 // GetProvider : Get provider
 func (n naverOAuth2) GetProvider() ProviderType {
-	return naverProvider
+	return NaverProvider
 }
 
 // GetID : Get user id

@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	// kakaoProvider : kakao login provider
-	kakaoProvider ProviderType = "kakao"
+	// KakaoProvider : kakao login provider
+	KakaoProvider ProviderType = "kakao"
 	// kakaoUserInfoURL : kakao user info url
 	kakaoUserInfoURL = "https://kapi.kakao.com/v2/user/me"
 )
@@ -73,7 +73,7 @@ Fulfill UserInfo interface
 
 // GetProvider : Get provider
 func (k kakaoOAuth2) GetProvider() ProviderType {
-	return kakaoProvider
+	return KakaoProvider
 }
 
 // GetID : Get ID from Kakao User Info

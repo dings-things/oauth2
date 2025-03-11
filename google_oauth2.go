@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	// googleProvider : google login provider
-	googleProvider ProviderType = "google"
+	// GoogleProvider : google login provider
+	GoogleProvider ProviderType = "google"
 	// googleUserInfoURL : google user info url
 	googleUserInfoURL = "https://www.googleapis.com/oauth2/v2/userinfo"
 )
@@ -72,7 +72,7 @@ Fulfill UserInfo interface
 
 // GetProvider : Get provider
 func (g googleOAuth2) GetProvider() ProviderType {
-	return googleProvider
+	return GoogleProvider
 }
 
 // GetID : Get user id
