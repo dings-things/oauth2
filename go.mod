@@ -1,3 +1,3 @@
 module github.com/dings-things/oauth2
 
-go 1.24.1
+go 1.24
