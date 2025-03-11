@@ -49,8 +49,8 @@ import (
 func main() {
 	client := &http.Client{}
 
-oauthClient := oauth2.NewOAuth2Client(client,
-		oauth2.WithGoogleOAuth2("your-google-client-id", "your-google-client-secret"),
+oauthClient := oauth2.NewClient(client,
+		oauth2.WithGoogleOAuth2(oauth2.ProviderSetting{clientID: "your-google-client-id", clientSecret: "your-google-client-secret"}),
 		oauth2.WithKakaoOAuth2(oauth2.ProviderSetting{clientID: "your-kakao-client-id", clientSecret: "your-kakao-client-secret"}),
 		oauth2.WithNaverOAuth2(oauth2.ProviderSetting{clientID: "your-naver-client-id", clientSecret: "your-naver-client-secret"}),
 	)
