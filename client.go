@@ -1,53 +1,59 @@
 package oauth2
 
 import (
-	"errors"
 	"net/http"
 )
 
-var (
-	// ErrProviderNotSet : Error Provider Not Set
-	ErrProviderNotSet = errors.New("Provider Not Set")
-)
-
 type (
-	// Client : OAuth2 Client Interface
+	// Client defines the main OAuth2 client interface used by applications
 	Client interface {
-		GetUserInfo(provider ProviderType, accessToken string) (UserInfo, error)
+		RequestUserInfo(provider ProviderType, accessToken string) (UserInfo, error)
+		RequestAuthURL(provider ProviderType, state string) string
+		RequestAccessToken(provider ProviderType, code string) (string, error)
 	}
 
-	// Provider : OAuth2 Provider Interface
+	// Provider defines the behavior that all OAuth2 providers must implement
 	Provider interface {
-		GetUserInfo(client *http.Client, accessToken string) (UserInfo, error)
+		GetUserInfo(accessToken string) (UserInfo, error)
+		GetAuthURL(state string) (string, error)
+		GetAccessToken(code string) (TokenInfo, error)
 		GetProvider() ProviderType
 	}
 
-	// UserInfo : UserInfo Achieved by OAuth2
+	// UserInfo defines the required fields retrieved from the OAuth2 provider
 	UserInfo interface {
 		GetID() string
 		GetEmail() string
 		GetName() string
 	}
 
-	// ProviderType : OAuth2 provider type
-	ProviderType string
-
-	// ProviderSetting : OAuth2 provider setting
-	ProviderSetting struct {
-		clientID     string
-		clientSecret string
+	// TokenInfo defines the token information returned from the provider
+	TokenInfo interface {
+		GetAccessToken() string
+		GetRefreshToken() string
+		GetExpiry() int
 	}
 
+	// ProviderType is a named string for the provider key (e.g. "google", "kakao")
+	ProviderType string
+
+	// ProviderSetting is used to initialize a provider with required values
+	ProviderSetting struct {
+		Client       *http.Client
+		ClientID     string
+		ClientSecret string
+		RedirectURL  string
+	}
+
+	// oauth2Client holds the registered providers
 	oauth2Client struct {
-		client    *http.Client
 		providers map[ProviderType]Provider
 	}
 )
 
-// NewClient : Create OAuth2 Client
+// NewClient initializes a new OAuth2 client with the given providers
 func NewClient(client *http.Client, providers ...Provider) Client {
 	oauthClient := &oauth2Client{
-		client:    client,
 		providers: make(map[ProviderType]Provider),
 	}
 
@@ -58,11 +64,37 @@ func NewClient(client *http.Client, providers ...Provider) Client {
 	return oauthClient
 }
 
-// GetUserInfo : Get User Info by OAuth2
-func (c *oauth2Client) GetUserInfo(provider ProviderType, accessToken string) (UserInfo, error) {
+// RequestUserInfo retrieves user information using the given access token
+func (c *oauth2Client) RequestUserInfo(provider ProviderType, accessToken string) (UserInfo, error) {
 	if oauthProvider, ok := c.providers[provider]; ok {
-		return oauthProvider.GetUserInfo(c.client, accessToken)
+		return oauthProvider.GetUserInfo(accessToken)
 	}
 
 	return nil, ErrProviderNotSet
+}
+
+// RequestAuthURL generates the provider's authorization URL for user redirection
+func (c *oauth2Client) RequestAuthURL(provider ProviderType, state string) string {
+	if oauthProvider, ok := c.providers[provider]; ok {
+		authURL, err := oauthProvider.GetAuthURL(state)
+		if err != nil {
+			return ""
+		}
+		return authURL
+	}
+
+	return ""
+}
+
+// RequestAccessToken exchanges the authorization code for an access token
+func (c *oauth2Client) RequestAccessToken(provider ProviderType, code string) (string, error) {
+	if oauthProvider, ok := c.providers[provider]; ok {
+		token, err := oauthProvider.GetAccessToken(code)
+		if err != nil {
+			return "", err
+		}
+		return token.GetAccessToken(), nil
+	}
+
+	return "", ErrProviderNotSet
 }
