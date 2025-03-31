@@ -3,6 +3,7 @@ package kakao
 import (
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -41,9 +42,11 @@ type (
 		AccountInfo struct {
 			Email   string `json:"email"`
 			Profile struct {
-				Nickname        string `json:"nickname"`
+				NickName        string `json:"nickname"`
 				ProfileImageURL string `json:"profile_image_url"`
 			} `json:"profile"`
+			Gender string `json:"gender"`
+			Name   string `json:"name"`
 		} `json:"kakao_account"`
 	}
 
@@ -76,7 +79,6 @@ func (k *provider) GetAuthURL(state string) (string, error) {
 	query.Set("redirect_uri", k.redirectURL)
 	query.Set("response_type", "code")
 	query.Set("state", state)
-	query.Set("scope", "profile account_email")
 
 	return AuthURL + "?" + query.Encode(), nil
 }
@@ -98,27 +100,47 @@ func (k *provider) GetAccessToken(code string) (oauth2.TokenInfo, error) {
 
 	req, err := http.NewRequest(http.MethodPost, TokenURL, strings.NewReader(form.Encode()))
 	if err != nil {
-		return tokenInfo, oauth2.WrapProviderError(ProviderType, oauth2.ErrTokenRequestFailed, err.Error())
+		return tokenInfo, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrTokenRequestFailed,
+			err.Error(),
+		)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := k.client.Do(req)
 	if err != nil {
-		return tokenInfo, oauth2.WrapProviderError(ProviderType, oauth2.ErrTokenRequestFailed, err.Error())
+		return tokenInfo, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrTokenRequestFailed,
+			err.Error(),
+		)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return tokenInfo, oauth2.WrapProviderError(ProviderType, oauth2.ErrTokenRequestFailed, err.Error())
+		return tokenInfo, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrTokenRequestFailed,
+			err.Error(),
+		)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return tokenInfo, oauth2.WrapProviderError(ProviderType, oauth2.ErrTokenRequestFailed, string(body))
+		return tokenInfo, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrTokenRequestFailed,
+			string(body),
+		)
 	}
 
 	if err := json.Unmarshal(body, &tokenInfo); err != nil {
-		return tokenInfo, oauth2.WrapProviderError(ProviderType, oauth2.ErrTokenRequestFailed, err.Error())
+		return tokenInfo, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrTokenRequestFailed,
+			err.Error(),
+		)
 	}
 
 	return tokenInfo, nil
@@ -128,25 +150,43 @@ func (k *provider) GetAccessToken(code string) (oauth2.TokenInfo, error) {
 func (k *provider) GetUserInfo(accessToken string) (oauth2.UserInfo, error) {
 	req, err := http.NewRequest(http.MethodGet, UserInfoURL, nil)
 	if err != nil {
-		return nil, oauth2.WrapProviderError(ProviderType, oauth2.ErrUserInfoRequestFailed, err.Error())
+		return nil, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrUserInfoRequestFailed,
+			err.Error(),
+		)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
 	resp, err := k.client.Do(req)
 	if err != nil {
-		return nil, oauth2.WrapProviderError(ProviderType, oauth2.ErrUserInfoRequestFailed, err.Error())
+		return nil, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrUserInfoRequestFailed,
+			err.Error(),
+		)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, oauth2.WrapProviderError(ProviderType, oauth2.ErrUserInfoRequestFailed, err.Error())
+		return nil, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrUserInfoRequestFailed,
+			err.Error(),
+		)
 	}
+
+	log.Println(string(body))
 
 	var userInfo userInfo
 	if err := json.Unmarshal(body, &userInfo); err != nil {
-		return nil, oauth2.WrapProviderError(ProviderType, oauth2.ErrUserInfoRequestFailed, err.Error())
+		return nil, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrUserInfoRequestFailed,
+			err.Error(),
+		)
 	}
 
 	return &userInfo, nil
@@ -162,7 +202,18 @@ func (k userInfo) GetID() string { return strconv.Itoa(k.ID) }
 func (k userInfo) GetEmail() string { return k.AccountInfo.Email }
 
 // GetName returns the user's nickname
-func (k userInfo) GetName() string { return k.AccountInfo.Profile.Nickname }
+func (k userInfo) GetName() string {
+	if k.AccountInfo.Name == "" {
+		return k.AccountInfo.Profile.NickName
+	}
+	return k.AccountInfo.Name
+}
+
+// GetGender returns the user's gender
+func (k userInfo) GetGender() string { return k.AccountInfo.Gender }
+
+// GetProfileImage returns the user's profile image URL
+func (k userInfo) GetProfileImage() string { return k.AccountInfo.Profile.ProfileImageURL }
 
 // GetAccessToken returns the OAuth2 access token
 func (k tokenInfo) GetAccessToken() string { return k.AccessToken }

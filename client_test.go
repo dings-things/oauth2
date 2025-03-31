@@ -37,9 +37,11 @@ func (m *mockProvider) GetProvider() oauth2.ProviderType {
 
 type dummyUser struct{}
 
-func (d dummyUser) GetID() string    { return "id" }
-func (d dummyUser) GetEmail() string { return "email" }
-func (d dummyUser) GetName() string  { return "name" }
+func (d dummyUser) GetID() string           { return "id" }
+func (d dummyUser) GetEmail() string        { return "email" }
+func (d dummyUser) GetName() string         { return "name" }
+func (d dummyUser) GetGender() string       { return "gender" }
+func (d dummyUser) GetProfileImage() string { return "image" }
 
 type dummyToken struct{}
 
@@ -48,7 +50,7 @@ func (d dummyToken) GetRefreshToken() string { return "refresh-token" }
 func (d dummyToken) GetExpiry() int          { return 3600 }
 
 func TestOAuth2Client_RequestUserInfo(t *testing.T) {
-	client := oauth2.NewClient(nil, &mockProvider{
+	client := oauth2.NewClient(&mockProvider{
 		typ:            "google",
 		returnUserInfo: dummyUser{},
 		errUserInfo:    nil,
@@ -63,7 +65,7 @@ func TestOAuth2Client_RequestUserInfo(t *testing.T) {
 }
 
 func TestOAuth2Client_RequestAccessToken(t *testing.T) {
-	client := oauth2.NewClient(nil, &mockProvider{
+	client := oauth2.NewClient(&mockProvider{
 		typ:         "kakao",
 		returnToken: dummyToken{},
 		errToken:    nil,
@@ -78,7 +80,7 @@ func TestOAuth2Client_RequestAccessToken(t *testing.T) {
 }
 
 func TestOAuth2Client_RequestAuthURL(t *testing.T) {
-	client := oauth2.NewClient(nil, &mockProvider{
+	client := oauth2.NewClient(&mockProvider{
 		typ:     "naver",
 		authURL: "http://naver.com/auth",
 		authErr: nil,
@@ -90,7 +92,7 @@ func TestOAuth2Client_RequestAuthURL(t *testing.T) {
 	emptyURL := client.RequestAuthURL("google", "state")
 	assert.Empty(t, emptyURL)
 
-	clientWithError := oauth2.NewClient(nil, &mockProvider{
+	clientWithError := oauth2.NewClient(&mockProvider{
 		typ:     "google",
 		authErr: errors.New("url error"),
 	})

@@ -65,25 +65,41 @@ func WithGoogleProvider(setting oauth2.ProviderSetting) oauth2.Provider {
 func (g *provider) GetUserInfo(accessToken string) (oauth2.UserInfo, error) {
 	req, err := http.NewRequest(http.MethodGet, UserInfoURL, nil)
 	if err != nil {
-		return nil, oauth2.WrapProviderError(ProviderType, oauth2.ErrUserInfoRequestFailed, err.Error())
+		return nil, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrUserInfoRequestFailed,
+			err.Error(),
+		)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
 	response, err := g.client.Do(req)
 	if err != nil {
-		return nil, oauth2.WrapProviderError(ProviderType, oauth2.ErrUserInfoRequestFailed, err.Error())
+		return nil, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrUserInfoRequestFailed,
+			err.Error(),
+		)
 	}
 	defer response.Body.Close()
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		return nil, oauth2.WrapProviderError(ProviderType, oauth2.ErrUserInfoRequestFailed, err.Error())
+		return nil, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrUserInfoRequestFailed,
+			err.Error(),
+		)
 	}
 
 	var userInfo *userInfo
 	if unmarshalErr := json.Unmarshal(body, &userInfo); unmarshalErr != nil {
-		return nil, oauth2.WrapProviderError(ProviderType, oauth2.ErrUserInfoRequestFailed, unmarshalErr.Error())
+		return nil, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrUserInfoRequestFailed,
+			unmarshalErr.Error(),
+		)
 	}
 
 	return userInfo, nil
@@ -129,27 +145,47 @@ func (g *provider) GetAccessToken(code string) (oauth2.TokenInfo, error) {
 
 	req, err := http.NewRequest(http.MethodPost, TokenURL, strings.NewReader(form.Encode()))
 	if err != nil {
-		return tokenInfo, oauth2.WrapProviderError(ProviderType, oauth2.ErrTokenRequestFailed, err.Error())
+		return tokenInfo, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrTokenRequestFailed,
+			err.Error(),
+		)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := g.client.Do(req)
 	if err != nil {
-		return tokenInfo, oauth2.WrapProviderError(ProviderType, oauth2.ErrTokenRequestFailed, err.Error())
+		return tokenInfo, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrTokenRequestFailed,
+			err.Error(),
+		)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return tokenInfo, oauth2.WrapProviderError(ProviderType, oauth2.ErrTokenRequestFailed, err.Error())
+		return tokenInfo, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrTokenRequestFailed,
+			err.Error(),
+		)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return tokenInfo, oauth2.WrapProviderError(ProviderType, oauth2.ErrTokenRequestFailed, string(body))
+		return tokenInfo, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrTokenRequestFailed,
+			string(body),
+		)
 	}
 
 	if err := json.Unmarshal(body, &tokenInfo); err != nil {
-		return tokenInfo, oauth2.WrapProviderError(ProviderType, oauth2.ErrTokenRequestFailed, err.Error())
+		return tokenInfo, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrTokenRequestFailed,
+			err.Error(),
+		)
 	}
 
 	return tokenInfo, nil
@@ -166,6 +202,12 @@ func (g userInfo) GetEmail() string { return g.Email }
 
 // GetName returns the user's full name
 func (g userInfo) GetName() string { return g.Name }
+
+// GetGender returns the user's gender
+func (g userInfo) GetGender() string { return "" }
+
+// GetProfileImage returns the user's profile image URL
+func (g userInfo) GetProfileImage() string { return g.Picture }
 
 // GetAccessToken returns the OAuth2 access token
 func (g tokenInfo) GetAccessToken() string { return g.AccessToken }

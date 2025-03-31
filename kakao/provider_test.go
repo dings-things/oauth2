@@ -139,7 +139,6 @@ func TestKakaoProvider_GetAuthURL(t *testing.T) {
 		assert.Equal(t, "http://localhost/callback", q.Get("redirect_uri"))
 		assert.Equal(t, "code", q.Get("response_type"))
 		assert.Equal(t, "xyz", q.Get("state"))
-		assert.Equal(t, "profile account_email", q.Get("scope"))
 	})
 
 	t.Run("missing redirect URL", func(t *testing.T) {

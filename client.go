@@ -25,6 +25,8 @@ type (
 		GetID() string
 		GetEmail() string
 		GetName() string
+		GetGender() string
+		GetProfileImage() string
 	}
 
 	// TokenInfo defines the token information returned from the provider
@@ -52,7 +54,7 @@ type (
 )
 
 // NewClient initializes a new OAuth2 client with the given providers
-func NewClient(client *http.Client, providers ...Provider) Client {
+func NewClient(providers ...Provider) Client {
 	oauthClient := &oauth2Client{
 		providers: make(map[ProviderType]Provider),
 	}
@@ -65,7 +67,10 @@ func NewClient(client *http.Client, providers ...Provider) Client {
 }
 
 // RequestUserInfo retrieves user information using the given access token
-func (c *oauth2Client) RequestUserInfo(provider ProviderType, accessToken string) (UserInfo, error) {
+func (c *oauth2Client) RequestUserInfo(
+	provider ProviderType,
+	accessToken string,
+) (UserInfo, error) {
 	if oauthProvider, ok := c.providers[provider]; ok {
 		return oauthProvider.GetUserInfo(accessToken)
 	}

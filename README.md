@@ -116,6 +116,8 @@ This module is designed with testability in mind:
 - Each provider can be tested in isolation.
 - The `oauth2.Client` can be tested with mocked providers or by injecting round-tripper logic.
 
+To Test E2E, Run cmd/main.go which runs localhost:8080 test server
+
 ---
 
 ## License

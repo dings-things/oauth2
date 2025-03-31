@@ -43,6 +43,7 @@ type (
 			Email        string `json:"email"`
 			Name         string `json:"name"`
 			ProfileImage string `json:"profile_image"`
+			Gender       string `json:"gender"`
 		} `json:"response"`
 	}
 
@@ -96,27 +97,47 @@ func (n *provider) GetAccessToken(code string) (oauth2.TokenInfo, error) {
 
 	req, err := http.NewRequest(http.MethodPost, TokenURL, strings.NewReader(form.Encode()))
 	if err != nil {
-		return tokenInfo, oauth2.WrapProviderError(ProviderType, oauth2.ErrTokenRequestFailed, err.Error())
+		return tokenInfo, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrTokenRequestFailed,
+			err.Error(),
+		)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := n.client.Do(req)
 	if err != nil {
-		return tokenInfo, oauth2.WrapProviderError(ProviderType, oauth2.ErrTokenRequestFailed, err.Error())
+		return tokenInfo, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrTokenRequestFailed,
+			err.Error(),
+		)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return tokenInfo, oauth2.WrapProviderError(ProviderType, oauth2.ErrTokenRequestFailed, err.Error())
+		return tokenInfo, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrTokenRequestFailed,
+			err.Error(),
+		)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return tokenInfo, oauth2.WrapProviderError(ProviderType, oauth2.ErrTokenRequestFailed, string(body))
+		return tokenInfo, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrTokenRequestFailed,
+			string(body),
+		)
 	}
 
 	if err := json.Unmarshal(body, &tokenInfo); err != nil {
-		return tokenInfo, oauth2.WrapProviderError(ProviderType, oauth2.ErrTokenRequestFailed, err.Error())
+		return tokenInfo, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrTokenRequestFailed,
+			err.Error(),
+		)
 	}
 
 	return tokenInfo, nil
@@ -126,25 +147,41 @@ func (n *provider) GetAccessToken(code string) (oauth2.TokenInfo, error) {
 func (n *provider) GetUserInfo(accessToken string) (oauth2.UserInfo, error) {
 	req, err := http.NewRequest(http.MethodGet, UserInfoURL, nil)
 	if err != nil {
-		return nil, oauth2.WrapProviderError(ProviderType, oauth2.ErrUserInfoRequestFailed, err.Error())
+		return nil, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrUserInfoRequestFailed,
+			err.Error(),
+		)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
 	resp, err := n.client.Do(req)
 	if err != nil {
-		return nil, oauth2.WrapProviderError(ProviderType, oauth2.ErrUserInfoRequestFailed, err.Error())
+		return nil, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrUserInfoRequestFailed,
+			err.Error(),
+		)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, oauth2.WrapProviderError(ProviderType, oauth2.ErrUserInfoRequestFailed, err.Error())
+		return nil, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrUserInfoRequestFailed,
+			err.Error(),
+		)
 	}
 
 	var userInfo userInfo
 	if err := json.Unmarshal(body, &userInfo); err != nil {
-		return nil, oauth2.WrapProviderError(ProviderType, oauth2.ErrUserInfoRequestFailed, err.Error())
+		return nil, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrUserInfoRequestFailed,
+			err.Error(),
+		)
 	}
 
 	return &userInfo, nil
@@ -161,6 +198,12 @@ func (n userInfo) GetEmail() string { return n.Response.Email }
 
 // GetName returns the user's name
 func (n userInfo) GetName() string { return n.Response.Name }
+
+// GetGender returns the user's gender
+func (n userInfo) GetGender() string { return n.Response.Gender }
+
+// GetProfileImage returns the user's profile image URL
+func (n userInfo) GetProfileImage() string { return n.Response.ProfileImage }
 
 // GetAccessToken returns the access token string
 func (n tokenInfo) GetAccessToken() string { return n.AccessToken }
