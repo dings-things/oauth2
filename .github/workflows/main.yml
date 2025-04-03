@@ -87,3 +87,6 @@ jobs:
 
           git tag $NEW_TAG
           git push origin $NEW_TAG
+
+          git tag -f latest
+          git push -f origin latest
