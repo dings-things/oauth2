@@ -85,8 +85,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git tag -f latest
-          git push -f origin latest
-
           git tag $NEW_TAG
           git push origin $NEW_TAG
+
+          git tag -f latest
+          git push -f origin latest
