@@ -1,0 +1,89 @@
+name: Go
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.24
+
+      - name: Get dependencies
+        run: go get -v ./...
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Test
+        run: go test -v -covermode=atomic -coverprofile=coverage.out ./...
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+
+      - name: Create semantic version tag
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git fetch --tags
+
+          # 마지막 태그 찾기
+          LAST_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | tail -n1)
+          if [[ "$LAST_TAG" == "" ]]; then
+            MAJOR=1
+            MINOR=0
+            PATCH=0
+            LAST_TAG=""
+          else
+            MAJOR=$(echo $LAST_TAG | cut -d. -f1 | tr -d 'v')
+            MINOR=$(echo $LAST_TAG | cut -d. -f2)
+            PATCH=$(echo $LAST_TAG | cut -d. -f3)
+          fi
+
+          # 전체 로그 범위 내에서 커밋 메시지 분석
+          if [[ "$LAST_TAG" != "" ]]; then
+            COMMITS=$(git log "$LAST_TAG"..HEAD --pretty=format:%s)
+          else
+            COMMITS=$(git log HEAD --pretty=format:%s)
+          fi
+
+          VERSION_BUMP="patch"
+          if echo "$COMMITS" | grep -q "BREAKING CHANGE"; then
+            VERSION_BUMP="major"
+          elif echo "$COMMITS" | grep -qE "^feat(\(.+\))?: "; then
+            VERSION_BUMP="minor"
+          elif echo "$COMMITS" | grep -qE "^fix(\(.+\))?: "; then
+            VERSION_BUMP="patch"
+          fi
+
+          if [[ "$VERSION_BUMP" == "major" ]]; then
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+          elif [[ "$VERSION_BUMP" == "minor" ]]; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
+          else
+            PATCH=$((PATCH + 1))
+          fi
+
+          NEW_TAG="v$MAJOR.$MINOR.$PATCH"
+          echo "👉 New tag: $NEW_TAG (bump: $VERSION_BUMP)"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git tag $NEW_TAG
+          git push origin $NEW_TAG
