@@ -73,7 +73,7 @@ func TestOAuth2Client_RequestAccessToken(t *testing.T) {
 
 	token, err := client.RequestToken("kakao", "code")
 	assert.NoError(t, err)
-	assert.Equal(t, "access-token", token)
+	assert.Equal(t, "access-token", token.GetAccessToken())
 
 	_, err = client.RequestToken("naver", "code")
 	assert.ErrorIs(t, err, oauth2.ErrProviderNotSet)
