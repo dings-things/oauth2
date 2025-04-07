@@ -23,7 +23,7 @@ func (m *mockProvider) GetUserInfo(token string) (oauth2.UserInfo, error) {
 	return m.returnUserInfo, m.errUserInfo
 }
 
-func (m *mockProvider) GetAccessToken(code string) (oauth2.TokenInfo, error) {
+func (m *mockProvider) GetToken(code string) (oauth2.TokenInfo, error) {
 	return m.returnToken, m.errToken
 }
 
@@ -71,11 +71,11 @@ func TestOAuth2Client_RequestAccessToken(t *testing.T) {
 		errToken:    nil,
 	})
 
-	token, err := client.RequestAccessToken("kakao", "code")
+	token, err := client.RequestToken("kakao", "code")
 	assert.NoError(t, err)
 	assert.Equal(t, "access-token", token)
 
-	_, err = client.RequestAccessToken("naver", "code")
+	_, err = client.RequestToken("naver", "code")
 	assert.ErrorIs(t, err, oauth2.ErrProviderNotSet)
 }
 

@@ -80,8 +80,8 @@ func (n *provider) GetAuthURL(state string) (string, error) {
 	return AuthURL + "?" + query.Encode(), nil
 }
 
-// GetAccessToken exchanges the authorization code for an access token from Naver
-func (n *provider) GetAccessToken(code string) (oauth2.TokenInfo, error) {
+// GetToken exchanges the authorization code for an access token from Naver
+func (n *provider) GetToken(code string) (oauth2.TokenInfo, error) {
 	var tokenInfo tokenInfo
 
 	if code == "" {

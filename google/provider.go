@@ -129,8 +129,8 @@ func (g *provider) GetAuthURL(state string) (string, error) {
 	return AuthURL + "?" + query.Encode(), nil
 }
 
-// GetAccessToken exchanges the authorization code for an access token from Google
-func (g *provider) GetAccessToken(code string) (oauth2.TokenInfo, error) {
+// GetToken exchanges the authorization code for an access token from Google
+func (g *provider) GetToken(code string) (oauth2.TokenInfo, error) {
 	var tokenInfo tokenInfo
 	if code == "" {
 		return tokenInfo, oauth2.WrapProviderError(ProviderType, oauth2.ErrEmptyAuthCode, "")

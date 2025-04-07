@@ -9,14 +9,14 @@ type (
 	Client interface {
 		RequestUserInfo(provider ProviderType, accessToken string) (UserInfo, error)
 		RequestAuthURL(provider ProviderType, state string) string
-		RequestAccessToken(provider ProviderType, code string) (string, error)
+		RequestToken(provider ProviderType, code string) (TokenInfo, error)
 	}
 
 	// Provider defines the behavior that all OAuth2 providers must implement
 	Provider interface {
 		GetUserInfo(accessToken string) (UserInfo, error)
 		GetAuthURL(state string) (string, error)
-		GetAccessToken(code string) (TokenInfo, error)
+		GetToken(code string) (TokenInfo, error)
 		GetProvider() ProviderType
 	}
 
@@ -91,15 +91,15 @@ func (c *oauth2Client) RequestAuthURL(provider ProviderType, state string) strin
 	return ""
 }
 
-// RequestAccessToken exchanges the authorization code for an access token
-func (c *oauth2Client) RequestAccessToken(provider ProviderType, code string) (string, error) {
+// RequestToken exchanges the authorization code for an access token
+func (c *oauth2Client) RequestToken(provider ProviderType, code string) (TokenInfo, error) {
 	if oauthProvider, ok := c.providers[provider]; ok {
-		token, err := oauthProvider.GetAccessToken(code)
+		token, err := oauthProvider.GetToken(code)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		return token.GetAccessToken(), nil
+		return token, nil
 	}
 
-	return "", ErrProviderNotSet
+	return nil, ErrProviderNotSet
 }

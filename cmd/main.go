@@ -115,14 +115,14 @@ func handleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, err := client.RequestAccessToken(provider, code)
+	accessToken, err := client.RequestToken(provider, code)
 	if err != nil {
 		http.Error(w, "failed to get access token: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	log.Printf("[OAuth] AccessToken received: %s", accessToken)
 
-	user, err := client.RequestUserInfo(provider, accessToken)
+	user, err := client.RequestUserInfo(provider, accessToken.GetAccessToken())
 	if err != nil {
 		http.Error(w, "failed to get user info: "+err.Error(), http.StatusInternalServerError)
 		return

@@ -90,7 +90,7 @@ func TestNaverProvider_GetAccessToken(t *testing.T) {
 			RedirectURL:  "http://localhost",
 		})
 
-		token, err := provider.GetAccessToken("code")
+		token, err := provider.GetToken("code")
 		assert.NoError(t, err)
 		assert.Equal(t, "access-token", token.GetAccessToken())
 		assert.Equal(t, "refresh-token", token.GetRefreshToken())
@@ -99,7 +99,7 @@ func TestNaverProvider_GetAccessToken(t *testing.T) {
 
 	t.Run("empty code", func(t *testing.T) {
 		provider := naver.WithNaverProvider(oauth2.ProviderSetting{})
-		_, err := provider.GetAccessToken("")
+		_, err := provider.GetToken("")
 		assert.Error(t, err)
 	})
 
@@ -113,7 +113,7 @@ func TestNaverProvider_GetAccessToken(t *testing.T) {
 			ClientSecret: "secret",
 			RedirectURL:  "http://localhost",
 		})
-		_, err := provider.GetAccessToken("code")
+		_, err := provider.GetToken("code")
 		assert.Error(t, err)
 	})
 }

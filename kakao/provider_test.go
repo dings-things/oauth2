@@ -91,7 +91,7 @@ func TestKakaoProvider_GetAccessToken(t *testing.T) {
 			RedirectURL:  "http://localhost",
 		})
 
-		token, err := provider.GetAccessToken("code")
+		token, err := provider.GetToken("code")
 		assert.NoError(t, err)
 		assert.Equal(t, "access-token", token.GetAccessToken())
 		assert.Equal(t, "refresh-token", token.GetRefreshToken())
@@ -102,7 +102,7 @@ func TestKakaoProvider_GetAccessToken(t *testing.T) {
 		provider := kakao.WithKakaoProvider(oauth2.ProviderSetting{
 			Client: &http.Client{},
 		})
-		_, err := provider.GetAccessToken("")
+		_, err := provider.GetToken("")
 		assert.Error(t, err)
 	})
 
@@ -116,7 +116,7 @@ func TestKakaoProvider_GetAccessToken(t *testing.T) {
 			ClientSecret: "secret",
 			RedirectURL:  "http://localhost",
 		})
-		_, err := provider.GetAccessToken("code")
+		_, err := provider.GetToken("code")
 		assert.Error(t, err)
 	})
 }
