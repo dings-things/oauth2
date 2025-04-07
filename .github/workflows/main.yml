@@ -33,13 +33,13 @@ jobs:
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
-
+      
       - name: Create semantic version tag
         if: github.ref == 'refs/heads/main'
         run: |
           git fetch --tags
 
-          # 마지막 태그 찾기
+          # 최신 태그 추출
           LAST_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | tail -n1)
           if [[ "$LAST_TAG" == "" ]]; then
             MAJOR=1
@@ -52,7 +52,6 @@ jobs:
             PATCH=$(echo $LAST_TAG | cut -d. -f3)
           fi
 
-          # 전체 로그 범위 내에서 커밋 메시지 분석
           if [[ "$LAST_TAG" != "" ]]; then
             COMMITS=$(git log "$LAST_TAG"..HEAD --pretty=format:%s)
           else
@@ -79,14 +78,23 @@ jobs:
             PATCH=$((PATCH + 1))
           fi
 
-          NEW_TAG="v$MAJOR.$MINOR.$PATCH"
-          echo "👉 New tag: $NEW_TAG (bump: $VERSION_BUMP)"
+          # 존재하지 않는 새 태그까지 반복해서 증가
+          while true; do
+            NEW_TAG="v$MAJOR.$MINOR.$PATCH"
+            if git rev-parse "$NEW_TAG" >/dev/null 2>&1; then
+              PATCH=$((PATCH + 1))
+            else
+              break
+            fi
+          done
+
+          echo "👉 Final tag to push: $NEW_TAG (bump: $VERSION_BUMP)"
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git tag $NEW_TAG
-          git push origin $NEW_TAG
+          git tag "$NEW_TAG"
+          git push origin "$NEW_TAG"
 
           git tag -f latest
           git push -f origin latest
