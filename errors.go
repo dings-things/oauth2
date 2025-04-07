@@ -10,6 +10,7 @@ var (
 	ErrEmptyAuthCode         = fmt.Errorf("authorization code is empty")
 	ErrTokenRequestFailed    = fmt.Errorf("failed to get access token")
 	ErrUserInfoRequestFailed = fmt.Errorf("failed to get user info")
+	ErrEmptyRefreshToken     = fmt.Errorf("refresh token is empty")
 )
 
 func WrapProviderError(provider ProviderType, base error, context string) error {

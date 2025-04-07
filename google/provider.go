@@ -191,6 +191,68 @@ func (g *provider) GetToken(code string) (oauth2.TokenInfo, error) {
 	return tokenInfo, nil
 }
 
+// RefreshToken exchanges a refresh token for a new access token from Google
+func (g *provider) RefreshToken(refreshToken string) (oauth2.TokenInfo, error) {
+	var tokenInfo tokenInfo
+
+	if refreshToken == "" {
+		return tokenInfo, oauth2.WrapProviderError(ProviderType, oauth2.ErrEmptyRefreshToken, "")
+	}
+
+	form := url.Values{}
+	form.Set("refresh_token", refreshToken)
+	form.Set("client_id", g.clientID)
+	form.Set("client_secret", g.clientSecret)
+	form.Set("grant_type", "refresh_token")
+
+	req, err := http.NewRequest(http.MethodPost, TokenURL, strings.NewReader(form.Encode()))
+	if err != nil {
+		return tokenInfo, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrTokenRequestFailed,
+			err.Error(),
+		)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := g.client.Do(req)
+	if err != nil {
+		return tokenInfo, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrTokenRequestFailed,
+			err.Error(),
+		)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return tokenInfo, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrTokenRequestFailed,
+			err.Error(),
+		)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return tokenInfo, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrTokenRequestFailed,
+			string(body),
+		)
+	}
+
+	if err := json.Unmarshal(body, &tokenInfo); err != nil {
+		return tokenInfo, oauth2.WrapProviderError(
+			ProviderType,
+			oauth2.ErrTokenRequestFailed,
+			err.Error(),
+		)
+	}
+
+	return tokenInfo, nil
+}
+
 // GetProvider returns the provider type ("google")
 func (g provider) GetProvider() oauth2.ProviderType { return ProviderType }
 

@@ -10,6 +10,7 @@ type (
 		RequestUserInfo(provider ProviderType, accessToken string) (UserInfo, error)
 		RequestAuthURL(provider ProviderType, state string) string
 		RequestToken(provider ProviderType, code string) (TokenInfo, error)
+		RequestRefreshToken(provider ProviderType, refreshToken string) (TokenInfo, error)
 	}
 
 	// Provider defines the behavior that all OAuth2 providers must implement
@@ -18,6 +19,7 @@ type (
 		GetAuthURL(state string) (string, error)
 		GetToken(code string) (TokenInfo, error)
 		GetProvider() ProviderType
+		RefreshToken(refreshToken string) (TokenInfo, error)
 	}
 
 	// UserInfo defines the required fields retrieved from the OAuth2 provider
@@ -95,6 +97,22 @@ func (c *oauth2Client) RequestAuthURL(provider ProviderType, state string) strin
 func (c *oauth2Client) RequestToken(provider ProviderType, code string) (TokenInfo, error) {
 	if oauthProvider, ok := c.providers[provider]; ok {
 		token, err := oauthProvider.GetToken(code)
+		if err != nil {
+			return nil, err
+		}
+		return token, nil
+	}
+
+	return nil, ErrProviderNotSet
+}
+
+// RequestRefreshToken refreshes the access token using the refresh token
+func (c *oauth2Client) RequestRefreshToken(
+	provider ProviderType,
+	refreshToken string,
+) (TokenInfo, error) {
+	if oauthProvider, ok := c.providers[provider]; ok {
+		token, err := oauthProvider.RefreshToken(refreshToken)
 		if err != nil {
 			return nil, err
 		}
