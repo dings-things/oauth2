@@ -2,6 +2,7 @@ package google_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -40,14 +41,14 @@ func TestGoogleProvider_GetUserInfo(t *testing.T) {
 			}, nil
 		})
 
-		provider := google.WithGoogleProvider(oauth2.ProviderSetting{
+		provider := google.NewProvider(oauth2.ProviderSetting{
 			Client:       client,
 			ClientID:     "",
 			ClientSecret: "",
 			RedirectURL:  "",
 		})
 
-		user, err := provider.GetUserInfo("test-token")
+		user, err := provider.GetUserInfo(context.Background(), "test-token")
 		assert.NoError(t, err)
 		assert.Equal(t, "123", user.GetID())
 		assert.Equal(t, "test@example.com", user.GetEmail())
@@ -59,14 +60,14 @@ func TestGoogleProvider_GetUserInfo(t *testing.T) {
 			return nil, errors.New("network error")
 		})
 
-		provider := google.WithGoogleProvider(oauth2.ProviderSetting{
+		provider := google.NewProvider(oauth2.ProviderSetting{
 			Client:       client,
 			ClientID:     "",
 			ClientSecret: "",
 			RedirectURL:  "",
 		})
 
-		_, err := provider.GetUserInfo("test-token")
+		_, err := provider.GetUserInfo(context.Background(), "test-token")
 		assert.Error(t, err)
 	})
 }
@@ -86,14 +87,14 @@ func TestGoogleProvider_GetAccessToken(t *testing.T) {
 			}, nil
 		})
 
-		provider := google.WithGoogleProvider(oauth2.ProviderSetting{
+		provider := google.NewProvider(oauth2.ProviderSetting{
 			Client:       client,
 			ClientID:     "id",
 			ClientSecret: "secret",
 			RedirectURL:  "http://localhost",
 		})
 
-		token, err := provider.GetToken("valid-code")
+		token, err := provider.GetToken(context.Background(), "valid-code")
 		assert.NoError(t, err)
 		assert.Equal(t, "access-token", token.GetAccessToken())
 		assert.Equal(t, "refresh-token", token.GetRefreshToken())
@@ -101,10 +102,10 @@ func TestGoogleProvider_GetAccessToken(t *testing.T) {
 	})
 
 	t.Run("empty code returns error", func(t *testing.T) {
-		provider := google.WithGoogleProvider(oauth2.ProviderSetting{
+		provider := google.NewProvider(oauth2.ProviderSetting{
 			Client: &http.Client{},
 		})
-		_, err := provider.GetToken("")
+		_, err := provider.GetToken(context.Background(), "")
 		assert.Error(t, err)
 	})
 
@@ -112,26 +113,26 @@ func TestGoogleProvider_GetAccessToken(t *testing.T) {
 		client := newMockClient(func(req *http.Request) (*http.Response, error) {
 			return nil, errors.New("connection failed")
 		})
-		provider := google.WithGoogleProvider(oauth2.ProviderSetting{
+		provider := google.NewProvider(oauth2.ProviderSetting{
 			Client:       client,
 			ClientID:     "id",
 			ClientSecret: "secret",
 			RedirectURL:  "http://localhost",
 		})
-		_, err := provider.GetToken("code")
+		_, err := provider.GetToken(context.Background(), "code")
 		assert.Error(t, err)
 	})
 }
 
 func TestGoogleProvider_GetAuthURL(t *testing.T) {
 	t.Run("successful auth URL generation", func(t *testing.T) {
-		provider := google.WithGoogleProvider(oauth2.ProviderSetting{
+		provider := google.NewProvider(oauth2.ProviderSetting{
 			Client:      &http.Client{},
 			ClientID:    "client-id",
 			RedirectURL: "http://localhost/callback",
 		})
 
-		authURL, err := provider.GetAuthURL("test-state")
+		authURL, err := provider.GetAuthURL(context.Background(), "test-state")
 		assert.NoError(t, err)
 
 		parsedURL, err := url.Parse(authURL)
@@ -148,11 +149,11 @@ func TestGoogleProvider_GetAuthURL(t *testing.T) {
 	})
 
 	t.Run("missing redirect URL", func(t *testing.T) {
-		provider := google.WithGoogleProvider(oauth2.ProviderSetting{
+		provider := google.NewProvider(oauth2.ProviderSetting{
 			Client:   &http.Client{},
 			ClientID: "client-id",
 		})
-		url, err := provider.GetAuthURL("state")
+		url, err := provider.GetAuthURL(context.Background(), "state")
 		assert.Error(t, err)
 		assert.Empty(t, url)
 	})

@@ -1,6 +1,7 @@
 package oauth2_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -19,15 +20,15 @@ type mockProvider struct {
 	typ            oauth2.ProviderType
 }
 
-func (m *mockProvider) GetUserInfo(token string) (oauth2.UserInfo, error) {
+func (m *mockProvider) GetUserInfo(ctx context.Context, token string) (oauth2.UserInfo, error) {
 	return m.returnUserInfo, m.errUserInfo
 }
 
-func (m *mockProvider) GetToken(code string) (oauth2.TokenInfo, error) {
+func (m *mockProvider) GetToken(ctx context.Context, code string) (oauth2.TokenInfo, error) {
 	return m.returnToken, m.errToken
 }
 
-func (m *mockProvider) GetAuthURL(state string) (string, error) {
+func (m *mockProvider) GetAuthURL(ctx context.Context, state string) (string, error) {
 	return m.authURL, m.authErr
 }
 
@@ -55,12 +56,12 @@ func TestOAuth2Client_RequestUserInfo(t *testing.T) {
 		returnUserInfo: dummyUser{},
 		errUserInfo:    nil,
 	})
-
-	user, err := client.RequestUserInfo("google", "token")
+	ctx := context.Background()
+	user, err := client.RequestUserInfo(ctx, "google", "token")
 	assert.NoError(t, err)
 	assert.Equal(t, "id", user.GetID())
 
-	_, err = client.RequestUserInfo("kakao", "token")
+	_, err = client.RequestUserInfo(ctx, "kakao", "token")
 	assert.ErrorIs(t, err, oauth2.ErrProviderNotSet)
 }
 
@@ -70,12 +71,12 @@ func TestOAuth2Client_RequestAccessToken(t *testing.T) {
 		returnToken: dummyToken{},
 		errToken:    nil,
 	})
-
-	token, err := client.RequestToken("kakao", "code")
+	ctx := context.Background()
+	token, err := client.RequestToken(ctx, "kakao", "code")
 	assert.NoError(t, err)
 	assert.Equal(t, "access-token", token.GetAccessToken())
 
-	_, err = client.RequestToken("naver", "code")
+	_, err = client.RequestToken(ctx, "naver", "code")
 	assert.ErrorIs(t, err, oauth2.ErrProviderNotSet)
 }
 
@@ -85,16 +86,16 @@ func TestOAuth2Client_RequestAuthURL(t *testing.T) {
 		authURL: "http://naver.com/auth",
 		authErr: nil,
 	})
-
-	url := client.RequestAuthURL("naver", "state")
+	ctx := context.Background()
+	url := client.RequestAuthURL(ctx, "naver", "state")
 	assert.Equal(t, "http://naver.com/auth", url)
 
-	emptyURL := client.RequestAuthURL("google", "state")
+	emptyURL := client.RequestAuthURL(ctx, "google", "state")
 	assert.Empty(t, emptyURL)
 
 	clientWithError := oauth2.NewClient(&mockProvider{
 		typ:     "google",
 		authErr: errors.New("url error"),
 	})
-	assert.Empty(t, clientWithError.RequestAuthURL("google", "state"))
+	assert.Empty(t, clientWithError.RequestAuthURL(ctx, "google", "state"))
 }

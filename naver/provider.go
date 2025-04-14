@@ -1,6 +1,7 @@
 package naver
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -55,8 +56,8 @@ type (
 	}
 )
 
-// WithNaverProvider initializes and returns a new Naver OAuth2 provider
-func WithNaverProvider(setting oauth2.ProviderSetting) oauth2.Provider {
+// NewProvider initializes and returns a new Naver OAuth2 provider
+func NewProvider(setting oauth2.ProviderSetting) oauth2.Provider {
 	return &provider{
 		client:       setting.Client,
 		clientID:     setting.ClientID,
@@ -66,7 +67,7 @@ func WithNaverProvider(setting oauth2.ProviderSetting) oauth2.Provider {
 }
 
 // GetAuthURL generates the authorization URL to redirect the user to Naver's login screen
-func (n *provider) GetAuthURL(state string) (string, error) {
+func (n *provider) GetAuthURL(ctx context.Context, state string) (string, error) {
 	if n.redirectURL == "" {
 		return "", oauth2.WrapProviderError(ProviderType, oauth2.ErrRedirectURLNotSet, "")
 	}
@@ -81,7 +82,7 @@ func (n *provider) GetAuthURL(state string) (string, error) {
 }
 
 // GetToken exchanges the authorization code for an access token from Naver
-func (n *provider) GetToken(code string) (oauth2.TokenInfo, error) {
+func (n *provider) GetToken(ctx context.Context, code string) (oauth2.TokenInfo, error) {
 	var tokenInfo tokenInfo
 
 	if code == "" {
@@ -95,7 +96,12 @@ func (n *provider) GetToken(code string) (oauth2.TokenInfo, error) {
 	form.Set("code", code)
 	form.Set("redirect_uri", n.redirectURL)
 
-	req, err := http.NewRequest(http.MethodPost, TokenURL, strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		TokenURL,
+		strings.NewReader(form.Encode()),
+	)
 	if err != nil {
 		return tokenInfo, oauth2.WrapProviderError(
 			ProviderType,
@@ -144,8 +150,8 @@ func (n *provider) GetToken(code string) (oauth2.TokenInfo, error) {
 }
 
 // GetUserInfo retrieves user information from Naver using the access token
-func (n *provider) GetUserInfo(accessToken string) (oauth2.UserInfo, error) {
-	req, err := http.NewRequest(http.MethodGet, UserInfoURL, nil)
+func (n *provider) GetUserInfo(ctx context.Context, accessToken string) (oauth2.UserInfo, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, UserInfoURL, nil)
 	if err != nil {
 		return nil, oauth2.WrapProviderError(
 			ProviderType,
@@ -188,7 +194,10 @@ func (n *provider) GetUserInfo(accessToken string) (oauth2.UserInfo, error) {
 }
 
 // RefreshToken exchanges a refresh token for a new access token from Naver
-func (n *provider) RefreshToken(refreshToken string) (oauth2.TokenInfo, error) {
+func (n *provider) RefreshToken(
+	ctx context.Context,
+	refreshToken string,
+) (oauth2.TokenInfo, error) {
 	var tokenInfo tokenInfo
 
 	if refreshToken == "" {
@@ -201,7 +210,12 @@ func (n *provider) RefreshToken(refreshToken string) (oauth2.TokenInfo, error) {
 	form.Set("client_secret", n.clientSecret)
 	form.Set("refresh_token", refreshToken)
 
-	req, err := http.NewRequest(http.MethodPost, TokenURL, strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		TokenURL,
+		strings.NewReader(form.Encode()),
+	)
 	if err != nil {
 		return tokenInfo, oauth2.WrapProviderError(
 			ProviderType,

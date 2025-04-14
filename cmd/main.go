@@ -36,19 +36,19 @@ func main() {
 
 	httpClient := http.DefaultClient
 	client = oauth2.NewClient(
-		google.WithGoogleProvider(oauth2.ProviderSetting{
+		google.NewProvider(oauth2.ProviderSetting{
 			Client:       httpClient,
 			ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 			ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 			RedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
 		}),
-		naver.WithNaverProvider(oauth2.ProviderSetting{
+		naver.NewProvider(oauth2.ProviderSetting{
 			Client:       httpClient,
 			ClientID:     os.Getenv("NAVER_CLIENT_ID"),
 			ClientSecret: os.Getenv("NAVER_CLIENT_SECRET"),
 			RedirectURL:  os.Getenv("NAVER_REDIRECT_URL"),
 		}),
-		kakao.WithKakaoProvider(oauth2.ProviderSetting{
+		kakao.NewProvider(oauth2.ProviderSetting{
 			Client:       httpClient,
 			ClientID:     os.Getenv("KAKAO_CLIENT_ID"),
 			ClientSecret: os.Getenv("KAKAO_CLIENT_SECRET"),
@@ -72,6 +72,7 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleLogin(w http.ResponseWriter, r *http.Request) {
+
 	provider := oauth2.ProviderType(r.URL.Query().Get("provider"))
 	if provider == "" {
 		http.Error(w, "provider query param is required", http.StatusBadRequest)
@@ -81,7 +82,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	state := generateRandomState()
 	setOAuthStateCookie(w, state)
 
-	authURL := client.RequestAuthURL(provider, state)
+	authURL := client.RequestAuthURL(r.Context(), provider, state)
 	if authURL == "" {
 		http.Error(w, "failed to generate auth URL", http.StatusInternalServerError)
 		return
@@ -115,14 +116,14 @@ func handleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, err := client.RequestToken(provider, code)
+	accessToken, err := client.RequestToken(r.Context(), provider, code)
 	if err != nil {
 		http.Error(w, "failed to get access token: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	log.Printf("[OAuth] AccessToken received: %s", accessToken)
 
-	user, err := client.RequestUserInfo(provider, accessToken.GetAccessToken())
+	user, err := client.RequestUserInfo(r.Context(), provider, accessToken.GetAccessToken())
 	if err != nil {
 		http.Error(w, "failed to get user info: "+err.Error(), http.StatusInternalServerError)
 		return

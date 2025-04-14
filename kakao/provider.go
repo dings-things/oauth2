@@ -1,9 +1,9 @@
 package kakao
 
 import (
+	"context"
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -58,8 +58,8 @@ type (
 	}
 )
 
-// WithKakaoProvider initializes the Kakao OAuth2 provider with given settings
-func WithKakaoProvider(setting oauth2.ProviderSetting) oauth2.Provider {
+// NewProvider initializes the Kakao OAuth2 provider with given settings
+func NewProvider(setting oauth2.ProviderSetting) oauth2.Provider {
 	return &provider{
 		client:       setting.Client,
 		clientID:     setting.ClientID,
@@ -69,7 +69,7 @@ func WithKakaoProvider(setting oauth2.ProviderSetting) oauth2.Provider {
 }
 
 // GetAuthURL generates the URL to redirect the user for Kakao OAuth2 login
-func (k *provider) GetAuthURL(state string) (string, error) {
+func (k *provider) GetAuthURL(ctx context.Context, state string) (string, error) {
 	if k.redirectURL == "" {
 		return "", oauth2.WrapProviderError(ProviderType, oauth2.ErrRedirectURLNotSet, "")
 	}
@@ -84,7 +84,7 @@ func (k *provider) GetAuthURL(state string) (string, error) {
 }
 
 // GetToken exchanges the authorization code for an access token from Kakao
-func (k *provider) GetToken(code string) (oauth2.TokenInfo, error) {
+func (k *provider) GetToken(ctx context.Context, code string) (oauth2.TokenInfo, error) {
 	var tokenInfo tokenInfo
 
 	if code == "" {
@@ -98,7 +98,12 @@ func (k *provider) GetToken(code string) (oauth2.TokenInfo, error) {
 	form.Set("code", code)
 	form.Set("client_secret", k.clientSecret)
 
-	req, err := http.NewRequest(http.MethodPost, TokenURL, strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		TokenURL,
+		strings.NewReader(form.Encode()),
+	)
 	if err != nil {
 		return tokenInfo, oauth2.WrapProviderError(
 			ProviderType,
@@ -147,8 +152,8 @@ func (k *provider) GetToken(code string) (oauth2.TokenInfo, error) {
 }
 
 // GetUserInfo retrieves the Kakao user's profile using the access token
-func (k *provider) GetUserInfo(accessToken string) (oauth2.UserInfo, error) {
-	req, err := http.NewRequest(http.MethodGet, UserInfoURL, nil)
+func (k *provider) GetUserInfo(ctx context.Context, accessToken string) (oauth2.UserInfo, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, UserInfoURL, nil)
 	if err != nil {
 		return nil, oauth2.WrapProviderError(
 			ProviderType,
@@ -178,8 +183,6 @@ func (k *provider) GetUserInfo(accessToken string) (oauth2.UserInfo, error) {
 		)
 	}
 
-	log.Println(string(body))
-
 	var userInfo userInfo
 	if err := json.Unmarshal(body, &userInfo); err != nil {
 		return nil, oauth2.WrapProviderError(
@@ -193,7 +196,10 @@ func (k *provider) GetUserInfo(accessToken string) (oauth2.UserInfo, error) {
 }
 
 // RefreshToken exchanges a refresh token for a new access token from Kakao
-func (k *provider) RefreshToken(refreshToken string) (oauth2.TokenInfo, error) {
+func (k *provider) RefreshToken(
+	ctx context.Context,
+	refreshToken string,
+) (oauth2.TokenInfo, error) {
 	var tokenInfo tokenInfo
 
 	if refreshToken == "" {
@@ -206,7 +212,12 @@ func (k *provider) RefreshToken(refreshToken string) (oauth2.TokenInfo, error) {
 	form.Set("refresh_token", refreshToken)
 	form.Set("client_secret", k.clientSecret)
 
-	req, err := http.NewRequest(http.MethodPost, TokenURL, strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		TokenURL,
+		strings.NewReader(form.Encode()),
+	)
 	if err != nil {
 		return tokenInfo, oauth2.WrapProviderError(
 			ProviderType,

@@ -2,6 +2,7 @@ package naver_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -48,11 +49,11 @@ func TestNaverProvider_GetUserInfo(t *testing.T) {
 			}, nil
 		})
 
-		provider := naver.WithNaverProvider(oauth2.ProviderSetting{
+		provider := naver.NewProvider(oauth2.ProviderSetting{
 			Client: client,
 		})
 
-		info, err := provider.GetUserInfo("token")
+		info, err := provider.GetUserInfo(context.Background(), "token")
 		assert.NoError(t, err)
 		assert.Equal(t, "naver-id", info.GetID())
 		assert.Equal(t, "naver@example.com", info.GetEmail())
@@ -63,8 +64,8 @@ func TestNaverProvider_GetUserInfo(t *testing.T) {
 		client := newMockClient(func(req *http.Request) (*http.Response, error) {
 			return nil, errors.New("network error")
 		})
-		provider := naver.WithNaverProvider(oauth2.ProviderSetting{Client: client})
-		_, err := provider.GetUserInfo("token")
+		provider := naver.NewProvider(oauth2.ProviderSetting{Client: client})
+		_, err := provider.GetUserInfo(context.Background(), "token")
 		assert.Error(t, err)
 	})
 }
@@ -83,14 +84,14 @@ func TestNaverProvider_GetAccessToken(t *testing.T) {
 				Body:       io.NopCloser(bytes.NewReader(mockBody)),
 			}, nil
 		})
-		provider := naver.WithNaverProvider(oauth2.ProviderSetting{
+		provider := naver.NewProvider(oauth2.ProviderSetting{
 			Client:       client,
 			ClientID:     "id",
 			ClientSecret: "secret",
 			RedirectURL:  "http://localhost",
 		})
 
-		token, err := provider.GetToken("code")
+		token, err := provider.GetToken(context.Background(), "code")
 		assert.NoError(t, err)
 		assert.Equal(t, "access-token", token.GetAccessToken())
 		assert.Equal(t, "refresh-token", token.GetRefreshToken())
@@ -98,8 +99,8 @@ func TestNaverProvider_GetAccessToken(t *testing.T) {
 	})
 
 	t.Run("empty code", func(t *testing.T) {
-		provider := naver.WithNaverProvider(oauth2.ProviderSetting{})
-		_, err := provider.GetToken("")
+		provider := naver.NewProvider(oauth2.ProviderSetting{})
+		_, err := provider.GetToken(context.Background(), "")
 		assert.Error(t, err)
 	})
 
@@ -107,25 +108,25 @@ func TestNaverProvider_GetAccessToken(t *testing.T) {
 		client := newMockClient(func(req *http.Request) (*http.Response, error) {
 			return nil, errors.New("fail")
 		})
-		provider := naver.WithNaverProvider(oauth2.ProviderSetting{
+		provider := naver.NewProvider(oauth2.ProviderSetting{
 			Client:       client,
 			ClientID:     "id",
 			ClientSecret: "secret",
 			RedirectURL:  "http://localhost",
 		})
-		_, err := provider.GetToken("code")
+		_, err := provider.GetToken(context.Background(), "code")
 		assert.Error(t, err)
 	})
 }
 
 func TestNaverProvider_GetAuthURL(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		provider := naver.WithNaverProvider(oauth2.ProviderSetting{
+		provider := naver.NewProvider(oauth2.ProviderSetting{
 			ClientID:    "test-client",
 			RedirectURL: "http://localhost/callback",
 		})
 
-		urlStr, err := provider.GetAuthURL("xyz")
+		urlStr, err := provider.GetAuthURL(context.Background(), "xyz")
 		assert.NoError(t, err)
 
 		u, err := url.Parse(urlStr)
@@ -139,8 +140,8 @@ func TestNaverProvider_GetAuthURL(t *testing.T) {
 	})
 
 	t.Run("missing redirect URL", func(t *testing.T) {
-		provider := naver.WithNaverProvider(oauth2.ProviderSetting{})
-		_, err := provider.GetAuthURL("abc")
+		provider := naver.NewProvider(oauth2.ProviderSetting{})
+		_, err := provider.GetAuthURL(context.Background(), "abc")
 		assert.Error(t, err)
 	})
 }

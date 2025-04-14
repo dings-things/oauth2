@@ -1,25 +1,34 @@
 package oauth2
 
 import (
+	"context"
 	"net/http"
 )
 
 type (
 	// Client defines the main OAuth2 client interface used by applications
 	Client interface {
-		RequestUserInfo(provider ProviderType, accessToken string) (UserInfo, error)
-		RequestAuthURL(provider ProviderType, state string) string
-		RequestToken(provider ProviderType, code string) (TokenInfo, error)
-		RequestRefreshToken(provider ProviderType, refreshToken string) (TokenInfo, error)
+		RequestUserInfo(
+			ctx context.Context,
+			provider ProviderType,
+			accessToken string,
+		) (UserInfo, error)
+		RequestAuthURL(ctx context.Context, provider ProviderType, state string) string
+		RequestToken(ctx context.Context, provider ProviderType, code string) (TokenInfo, error)
+		RequestRefreshToken(
+			ctx context.Context,
+			provider ProviderType,
+			refreshToken string,
+		) (TokenInfo, error)
 	}
 
 	// Provider defines the behavior that all OAuth2 providers must implement
 	Provider interface {
-		GetUserInfo(accessToken string) (UserInfo, error)
-		GetAuthURL(state string) (string, error)
-		GetToken(code string) (TokenInfo, error)
+		GetUserInfo(ctx context.Context, accessToken string) (UserInfo, error)
+		GetAuthURL(ctx context.Context, state string) (string, error)
+		GetToken(ctx context.Context, code string) (TokenInfo, error)
 		GetProvider() ProviderType
-		RefreshToken(refreshToken string) (TokenInfo, error)
+		RefreshToken(ctx context.Context, refreshToken string) (TokenInfo, error)
 	}
 
 	// UserInfo defines the required fields retrieved from the OAuth2 provider
@@ -56,6 +65,23 @@ type (
 )
 
 // NewClient initializes a new OAuth2 client with the given providers
+//
+//		example:
+//	    httpClient := http.DefaultClient
+//		client := oauth2.NewClient(
+//		    kakao.NewProvider(oauth2.ProviderSetting{
+//		        Client:       httpClient,
+//		        ClientID:     "client-id",
+//		        ClientSecret: "secret",
+//		        RedirectURL:  "http://localhost/kakao",
+//		    }),
+//		    google.NewProvider(oauth2.ProviderSetting{
+//		        Client:       httpClient,
+//		        ClientID:     "client-id",
+//		        ClientSecret: "secret",
+//		        RedirectURL:  "http://localhost/google",
+//		    }),
+//		)
 func NewClient(providers ...Provider) Client {
 	oauthClient := &oauth2Client{
 		providers: make(map[ProviderType]Provider),
@@ -70,20 +96,25 @@ func NewClient(providers ...Provider) Client {
 
 // RequestUserInfo retrieves user information using the given access token
 func (c *oauth2Client) RequestUserInfo(
+	ctx context.Context,
 	provider ProviderType,
 	accessToken string,
 ) (UserInfo, error) {
 	if oauthProvider, ok := c.providers[provider]; ok {
-		return oauthProvider.GetUserInfo(accessToken)
+		return oauthProvider.GetUserInfo(ctx, accessToken)
 	}
 
 	return nil, ErrProviderNotSet
 }
 
 // RequestAuthURL generates the provider's authorization URL for user redirection
-func (c *oauth2Client) RequestAuthURL(provider ProviderType, state string) string {
+func (c *oauth2Client) RequestAuthURL(
+	ctx context.Context,
+	provider ProviderType,
+	state string,
+) string {
 	if oauthProvider, ok := c.providers[provider]; ok {
-		authURL, err := oauthProvider.GetAuthURL(state)
+		authURL, err := oauthProvider.GetAuthURL(ctx, state)
 		if err != nil {
 			return ""
 		}
@@ -94,9 +125,13 @@ func (c *oauth2Client) RequestAuthURL(provider ProviderType, state string) strin
 }
 
 // RequestToken exchanges the authorization code for an access token
-func (c *oauth2Client) RequestToken(provider ProviderType, code string) (TokenInfo, error) {
+func (c *oauth2Client) RequestToken(
+	ctx context.Context,
+	provider ProviderType,
+	code string,
+) (TokenInfo, error) {
 	if oauthProvider, ok := c.providers[provider]; ok {
-		token, err := oauthProvider.GetToken(code)
+		token, err := oauthProvider.GetToken(ctx, code)
 		if err != nil {
 			return nil, err
 		}
@@ -108,11 +143,12 @@ func (c *oauth2Client) RequestToken(provider ProviderType, code string) (TokenIn
 
 // RequestRefreshToken refreshes the access token using the refresh token
 func (c *oauth2Client) RequestRefreshToken(
+	ctx context.Context,
 	provider ProviderType,
 	refreshToken string,
 ) (TokenInfo, error) {
 	if oauthProvider, ok := c.providers[provider]; ok {
-		token, err := oauthProvider.RefreshToken(refreshToken)
+		token, err := oauthProvider.RefreshToken(ctx, refreshToken)
 		if err != nil {
 			return nil, err
 		}

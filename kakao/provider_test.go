@@ -2,6 +2,7 @@ package kakao_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -45,11 +46,11 @@ func TestKakaoProvider_GetUserInfo(t *testing.T) {
 			}, nil
 		})
 
-		provider := kakao.WithKakaoProvider(oauth2.ProviderSetting{
+		provider := kakao.NewProvider(oauth2.ProviderSetting{
 			Client: client,
 		})
 
-		info, err := provider.GetUserInfo("token")
+		info, err := provider.GetUserInfo(context.Background(), "token")
 		assert.NoError(t, err)
 		assert.Equal(t, "1001", info.GetID())
 		assert.Equal(t, "kakao@example.com", info.GetEmail())
@@ -61,10 +62,10 @@ func TestKakaoProvider_GetUserInfo(t *testing.T) {
 			return nil, errors.New("network down")
 		})
 
-		provider := kakao.WithKakaoProvider(oauth2.ProviderSetting{
+		provider := kakao.NewProvider(oauth2.ProviderSetting{
 			Client: client,
 		})
-		_, err := provider.GetUserInfo("token")
+		_, err := provider.GetUserInfo(context.Background(), "token")
 		assert.Error(t, err)
 	})
 }
@@ -84,14 +85,14 @@ func TestKakaoProvider_GetAccessToken(t *testing.T) {
 			}, nil
 		})
 
-		provider := kakao.WithKakaoProvider(oauth2.ProviderSetting{
+		provider := kakao.NewProvider(oauth2.ProviderSetting{
 			Client:       client,
 			ClientID:     "client-id",
 			ClientSecret: "secret",
 			RedirectURL:  "http://localhost",
 		})
 
-		token, err := provider.GetToken("code")
+		token, err := provider.GetToken(context.Background(), "code")
 		assert.NoError(t, err)
 		assert.Equal(t, "access-token", token.GetAccessToken())
 		assert.Equal(t, "refresh-token", token.GetRefreshToken())
@@ -99,10 +100,10 @@ func TestKakaoProvider_GetAccessToken(t *testing.T) {
 	})
 
 	t.Run("empty code", func(t *testing.T) {
-		provider := kakao.WithKakaoProvider(oauth2.ProviderSetting{
+		provider := kakao.NewProvider(oauth2.ProviderSetting{
 			Client: &http.Client{},
 		})
-		_, err := provider.GetToken("")
+		_, err := provider.GetToken(context.Background(), "")
 		assert.Error(t, err)
 	})
 
@@ -110,25 +111,25 @@ func TestKakaoProvider_GetAccessToken(t *testing.T) {
 		client := newMockClient(func(req *http.Request) (*http.Response, error) {
 			return nil, errors.New("fail")
 		})
-		provider := kakao.WithKakaoProvider(oauth2.ProviderSetting{
+		provider := kakao.NewProvider(oauth2.ProviderSetting{
 			Client:       client,
 			ClientID:     "id",
 			ClientSecret: "secret",
 			RedirectURL:  "http://localhost",
 		})
-		_, err := provider.GetToken("code")
+		_, err := provider.GetToken(context.Background(), "code")
 		assert.Error(t, err)
 	})
 }
 
 func TestKakaoProvider_GetAuthURL(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		provider := kakao.WithKakaoProvider(oauth2.ProviderSetting{
+		provider := kakao.NewProvider(oauth2.ProviderSetting{
 			ClientID:    "kakao-client",
 			RedirectURL: "http://localhost/callback",
 		})
 
-		authURL, err := provider.GetAuthURL("xyz")
+		authURL, err := provider.GetAuthURL(context.Background(), "xyz")
 		assert.NoError(t, err)
 
 		u, err := url.Parse(authURL)
@@ -142,8 +143,8 @@ func TestKakaoProvider_GetAuthURL(t *testing.T) {
 	})
 
 	t.Run("missing redirect URL", func(t *testing.T) {
-		provider := kakao.WithKakaoProvider(oauth2.ProviderSetting{})
-		_, err := provider.GetAuthURL("test")
+		provider := kakao.NewProvider(oauth2.ProviderSetting{})
+		_, err := provider.GetAuthURL(context.Background(), "test")
 		assert.Error(t, err)
 	})
 }

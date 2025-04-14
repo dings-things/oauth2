@@ -1,6 +1,7 @@
 package google
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -51,8 +52,8 @@ type (
 	}
 )
 
-// WithGoogleProvider initializes and returns a new Google OAuth2 provider
-func WithGoogleProvider(setting oauth2.ProviderSetting) oauth2.Provider {
+// NewProvider initializes and returns a new Google OAuth2 provider
+func NewProvider(setting oauth2.ProviderSetting) oauth2.Provider {
 	return &provider{
 		client:       setting.Client,
 		clientID:     setting.ClientID,
@@ -62,8 +63,8 @@ func WithGoogleProvider(setting oauth2.ProviderSetting) oauth2.Provider {
 }
 
 // GetUserInfo retrieves the user profile information from Google using the access token
-func (g *provider) GetUserInfo(accessToken string) (oauth2.UserInfo, error) {
-	req, err := http.NewRequest(http.MethodGet, UserInfoURL, nil)
+func (g *provider) GetUserInfo(ctx context.Context, accessToken string) (oauth2.UserInfo, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, UserInfoURL, nil)
 	if err != nil {
 		return nil, oauth2.WrapProviderError(
 			ProviderType,
@@ -106,7 +107,7 @@ func (g *provider) GetUserInfo(accessToken string) (oauth2.UserInfo, error) {
 }
 
 // GetAuthURL constructs the Google OAuth2 authorization URL
-func (g *provider) GetAuthURL(state string) (string, error) {
+func (g *provider) GetAuthURL(ctx context.Context, state string) (string, error) {
 	if g.redirectURL == "" {
 		return "", oauth2.WrapProviderError(ProviderType, oauth2.ErrRedirectURLNotSet, "")
 	}
@@ -130,7 +131,7 @@ func (g *provider) GetAuthURL(state string) (string, error) {
 }
 
 // GetToken exchanges the authorization code for an access token from Google
-func (g *provider) GetToken(code string) (oauth2.TokenInfo, error) {
+func (g *provider) GetToken(ctx context.Context, code string) (oauth2.TokenInfo, error) {
 	var tokenInfo tokenInfo
 	if code == "" {
 		return tokenInfo, oauth2.WrapProviderError(ProviderType, oauth2.ErrEmptyAuthCode, "")
@@ -143,7 +144,12 @@ func (g *provider) GetToken(code string) (oauth2.TokenInfo, error) {
 	form.Set("redirect_uri", g.redirectURL)
 	form.Set("grant_type", "authorization_code")
 
-	req, err := http.NewRequest(http.MethodPost, TokenURL, strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		TokenURL,
+		strings.NewReader(form.Encode()),
+	)
 	if err != nil {
 		return tokenInfo, oauth2.WrapProviderError(
 			ProviderType,
@@ -192,7 +198,10 @@ func (g *provider) GetToken(code string) (oauth2.TokenInfo, error) {
 }
 
 // RefreshToken exchanges a refresh token for a new access token from Google
-func (g *provider) RefreshToken(refreshToken string) (oauth2.TokenInfo, error) {
+func (g *provider) RefreshToken(
+	ctx context.Context,
+	refreshToken string,
+) (oauth2.TokenInfo, error) {
 	var tokenInfo tokenInfo
 
 	if refreshToken == "" {
@@ -205,7 +214,12 @@ func (g *provider) RefreshToken(refreshToken string) (oauth2.TokenInfo, error) {
 	form.Set("client_secret", g.clientSecret)
 	form.Set("grant_type", "refresh_token")
 
-	req, err := http.NewRequest(http.MethodPost, TokenURL, strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		TokenURL,
+		strings.NewReader(form.Encode()),
+	)
 	if err != nil {
 		return tokenInfo, oauth2.WrapProviderError(
 			ProviderType,
